@@ -1,20 +1,20 @@
-const { Model } = require("sequelize");
+const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
   class Task extends Model {
     static associate(models) {
       Task.belongsTo(models.Project, {
-        foreignKey: "Project_id",
+        foreignKey: 'Project_id',
       });
 
       Task.belongsToMany(models.User, {
-        through: "TaskUser",
-        foreignKey: "task_id",
+        through: 'TaskUser',
+        foreignKey: 'task_id',
       });
 
       Task.hasMany(models.Comment, {
-        foreignKey: "task_id",
-        onDelete: "CASCADE",
+        foreignKey: 'task_id',
+        onDelete: 'CASCADE',
         hooks: true,
       });
     }
@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "Task",
+      modelName: 'Task',
     }
   );
 
