@@ -27,12 +27,11 @@ module.exports = (sequelize, DataTypes) => {
 
   User.init(
     {
-      UserID: {
+      FirstName: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true,
       },
-      FullName: {
+      LastName: {
         type: DataTypes.STRING,
         allowNull: false,
       },
@@ -47,10 +46,6 @@ module.exports = (sequelize, DataTypes) => {
         validate: {
           isEmail: true,
         },
-      },
-     PhoneNumber: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
       },
       Role: {
         type: DataTypes.ENUM('Admin', 'User'),
@@ -69,6 +64,29 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
   
+// Create a Admin user after the model is synced
+User.afterSync(() => {
+  User.findOne({ where: { Role: 'SuperAdmin' } }).then((superAdmin) => {
+    if (!superAdmin) {
+      const superAdminData = {
+        FirstName: 'Super',
+        LastName: 'Admin',
+        Password: bcrypt.hashSync('password', 10), // Set the hashed password
+        Email: 'superadmin@example.com',
+        Role: 'SuperAdmin',
+      };
+
+      User.create(superAdminData)
+        .then(() => {
+          console.log('Super admin user created successfully.');
+        })
+        .catch((error) => {
+          console.error('Error creating super admin user:', error);
+        });
+    }
+  });
+});
+
 
   return User;
 };

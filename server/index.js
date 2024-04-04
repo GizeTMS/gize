@@ -6,7 +6,7 @@ const cors = require('cors');
 const app = express();
 
 var corOptions = {
-  origin: 'https://localhost:3306'
+  origin: 'https://localhost:3001'
 }
 
 //middleware

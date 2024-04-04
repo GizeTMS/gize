@@ -1,19 +1,32 @@
 const express = require('express');
 const router = express.Router();
+const UserController = require('../controllers/userController');
 
-const userController = require('../controllers/userController');
+// GET /users - Retrieve all users
+router.get('/', UserController.getAllUsers);
 
-// Define routes for bills resource
-router.post('/user', (req, res) => {
-router.post('/', userController.create);
-router.post('/login', userController.login);
-router.post('/requestPasswordReset', userController.requestPasswordReset);
-router.post('/verifyResetToken', userController.verifyResetToken)
-router.post('/updatePasswordWithToken', userController.updatePasswordWithToken);
-router.get('/', userController.findAll);
-router.get('/:id', userController.findOne);
-router.put('/:id', userController.update);
-router.delete('/:id', userController.delete);
-});
+// GET /users/:userId - Retrieve a specific user by ID
+router.get('/:userId', UserController.getUserById);
+
+// POST /users - Create a new user
+router.post('/', UserController.createUser);
+
+// PUT /users/:userId - Update a user
+router.put('/:userId', UserController.updateUser);
+
+// DELETE /users/:userId - Delete a user
+router.delete('/:userId', UserController.deleteUser);
+
+// User login
+router.post('/login', UserController.login);
+
+// Request password reset
+router.post('/password/reset', UserController.requestPasswordReset);
+
+// Verify reset password token
+router.get('/password/reset/:token', UserController.verifyResetToken);
+
+// Update password with token
+router.post('/password/reset/:token', UserController.updatePasswordWithToken);
 
 module.exports = router;

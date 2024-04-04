@@ -1,210 +1,366 @@
-const asyncHandler = require('express-async-handler');
+const expressAsyncHandler = require('express-async-handler');
+const db = require('../models');
+const User = db.User;
 const bcrypt = require('bcrypt');
+const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
-const multer = require('multer');
 
-const User = require('../models/userModel');
+// Set up Multer storage for profile picture uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/profilePictures');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const fileExtension = file.originalname.split('.').pop();
+    cb(null, `${uniqueSuffix}.${fileExtension}`);
+  }
+});
 
-// Create and save a new user
-exports.createUser = async (req, res) => {
-  // Validate request
+// Multer file filter to allow only image files
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed'), false);
+  }
+};
+
+// Multer upload instance
+const upload = multer({ storage, fileFilter });
+
+exports.getAllUsers = expressAsyncHandler(async (req, res) => {
+  try {
+    const users = await User.findAll();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({
+      message: 'An error occurred while retrieving users',
+      error: error.message
+    });
+  }
+});
+
+exports.getUserById = expressAsyncHandler(async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findByPk(userId);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+    } else {
+      res.json(user);
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: 'An error occurred while retrieving the user',
+      error: error.message
+    });
+  }
+});
+
+exports.createUser = expressAsyncHandler(async (req, res) => {
   const requiredFields = [
-    'UserID',
-    'FullName',
-    'Email',
+    'FirstName',
+    'LastName',
     'Password',
+    'Email',
   ];
 
-  // Check if any required fields are missing in the request body
   const missingFields = requiredFields.filter((field) => !req.body[field]);
 
   if (missingFields.length > 0) {
-    res.status(400).send({
+    res.status(400).json({
       message: `${missingFields.join(', ')} cannot be empty`,
     });
     return;
   }
 
-  // Check if user already exists
-  const existingUser = await User.findOne({
-    where: {
-      Email: req.body.Email,
-    },
-  });
-
-  if (existingUser) {
-    res.status(409).send({
-      message: 'User already exists',
-    });
-    return;
-  }
-
-  // Hash the password
-  const hashedPassword = await bcrypt.hash(req.body.Password, 10);
-
-  // Create a user object
-  const user = {
-    UserID: req.body.UserID,
-    FullName: req.body.FullName,
-    Password: hashedPassword,
-    Email: req.body.Email,
-    Role: req.body.Role,
-    ProfilePicture: req.file ? req.file.path : null,
-   
-  };
-
   try {
-    // Save user in the database
-    const createdUser = await User.create(user);
+    const { FirstName, LastName, Password, Email, Role } = req.body;
 
-    // Send the user data as the response
-    res.send(createdUser);
-  } catch (error) {
-    // Handle validation errors
-    if (error.name === 'SequelizeValidationError') {
-      const errors = error.errors.map((err) => err.message);
-      res.status(400).send({
-        message: 'Validation error',
-        errors: errors,
-      });
-    } else {
-      // Handle other errors
-      console.error('Error saving user:', error);
-      res.status(500).send({
-        message: 'Error saving user',
-      });
+    // Check if user with the same email already exists
+    const existingUser = await User.findOne({ where: { Email } });
+    if (existingUser) {
+      res.status(409).json({ message: 'User already exists' });
+      return;
     }
-  }
-};
 
+    const hashedPassword = await bcrypt.hash(Password, 10);
 
-// Retrieve all users
-exports.findAll = async (req, res) => {
-  try {
-    // Find all users
-    const users = await User.findAll();
+    const user = await User.create({
+      FirstName,
+      LastName,
+      Password: hashedPassword,
+      Email,
+      Role,
+      ProfilePicture: null // Set default profile picture to null
+    });
 
-    // Send the users data as the response
-    res.send(users);
+    res.status(201).json(user);
   } catch (error) {
-    console.error('Error retrieving users:', error);
-    res.status(500).send({
-      message: 'Error retrieving users',
+    res.status(500).json({
+      message: 'An error occurred while creating the user',
+      error: error.message
     });
   }
-};
+});
 
-// Retrieve a user by ID
-exports.findOne = async (req, res) => {
-  const userId = req.params.userId;
-
+exports.updateUser = expressAsyncHandler(async (req, res) => {
   try {
-    // Find the user by ID
+    const { userId } = req.params;
+    const { FirstName, LastName, Password, Email, Role } = req.body;
     const user = await User.findByPk(userId);
-
-    // If the user is not found, return a 404 error
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Send the user data as the response
-    res.send(user);
-  } catch (error) {
-    console.error('Error finding user:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-// Update a user by id
-exports.update = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-
-  try {
-    // Find the user by ID
-    const user = await User.findByPk(id);
-
-    if (!user) {
-      res.status(404).send({
-        message: `User with id=${id} not found`,
-      });
+      res.status(404).json({ message: 'User not found' });
     } else {
-      // Update the user fields based on the request body
-      user.FullName = req.body.FullName || user.FullName;
-      user.Email = req.body.Email || user.Email;
-      user.Role = req.body.Role || user.Role;
+      user.FirstName = FirstName;
+      user.LastName = LastName;
+      user.Email = Email;
+      user.Role = Role;
 
-      // Update the profile picture if provided in the request
+      if (Password) {
+        user.Password = await bcrypt.hash(Password, 10);
+      }
+
       if (req.file) {
+        // Handle profile picture update using multer
         user.ProfilePicture = req.file.path;
       }
 
-      // Update the password if provided in the request
-      if (req.body.Password) {
-        const hashedPassword = await bcrypt.hash(req.body.Password, 10);
-        user.Password = hashedPassword;
-      }
-
-      // Save the updated user
       await user.save();
-
-      res.send({
-        message: 'User was updated successfully.',
-        user: user,
-      });
+      res.json(user);
     }
   } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).send({
-      message: 'Error updating user',
+    res.status(500).json({
+      message: 'An error occurred while updating the user',
+      error: error.message
     });
   }
 });
 
-// Delete a user by id
-exports.delete = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-
-   // Delete the user from the database
-  const num = await User.destroy({
-    where: { id: id },
-  });
-
-  if (num === 1) {
-    res.send({
-      message: 'User was deleted successfully!',
-    });
-  } else {
-    res.send({
-      message: `Cannot delete user with id=${id}. User not found!`,
-    });
-  }
-});
-// upload image
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'Images')// Set the destination folder for uploaded images
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Set the filename for uploaded images
-
-  }
-})
-// Handle image upload
-exports.upload = multer({
-  storage: storage,// Set the storage configuration
-  limits: { fileSize: '1000000' },// Limit the file size to 1MB
-  fileFilter: (req, file, cb) => {
-    const fileTypes = /jpeg|jpg|png|gif/;
-    const mimeType = fileTypes.test(file.mimetype);// Check if the file mime type is valid
-    const extname = fileTypes.test(path.extname(file.originalname));// Check if the file extension is valid
-    if (mimeType && extname) {// If both mime type and extension are valid
-      return cb(null, true);
+exports.deleteUser = expressAsyncHandler(async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findByPk(userId);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+    } else {
+      await user.destroy();
+      res.json({ message: 'User deleted successfully' });
     }
-    cb('provide the proper format');// Reject the file if the format is invalid
+  } catch (error) {
+    res.status(500).json({
+      message: 'An error occurred while deleting the user',
+      error: error.message
+    });
   }
-}).single('ProfilePicture');// Handle a single file with the field name 'ProfilePicture'
+});
+
+
+
+
+// const User = require('../models/userModel');
+
+// // Create and save a new user
+// exports.createUser = async (req, res) => {
+//   // Validate request
+//   const requiredFields = [
+//     'FirstName',
+//     'LastName',
+//     'Email',
+//     'Password',
+//   ];
+
+//   // Check if any required fields are missing in the request body
+//   const missingFields = requiredFields.filter((field) => !req.body[field]);
+
+//   if (missingFields.length > 0) {
+//     res.status(400).send({
+//       message: `${missingFields.join(', ')} cannot be empty`,
+//     });
+//     return;
+//   }
+
+//   // Check if user already exists
+//   const existingUser = await User.findOne({
+//     where: {
+//       Email: req.body.Email,
+//     },
+//   });
+
+//   if (existingUser) {
+//     res.status(409).send({
+//       message: 'User already exists',
+//     });
+//     return;
+//   }
+
+//   // Hash the password
+//   const hashedPassword = await bcrypt.hash(req.body.Password, 10);
+
+//   // Create a user object
+//   const user = {
+//     FirstName: req.body.FirstName,
+//     LaststName: req.body.LastName,
+//     Password: hashedPassword,
+//     Email: req.body.Email,
+//     Role: req.body.Role,
+//     ProfilePicture: req.file ? req.file.path : null,
+   
+//   };
+
+//   try {
+//     // Save user in the database
+//     const createdUser = await User.create(user);
+
+//     // Send the user data as the response
+//     res.send(createdUser);
+//   } catch (error) {
+//     // Handle validation errors
+//     if (error.name === 'SequelizeValidationError') {
+//       const errors = error.errors.map((err) => err.message);
+//       res.status(400).send({
+//         message: 'Validation error',
+//         errors: errors,
+//       });
+//     } else {
+//       // Handle other errors
+//       console.error('Error saving user:', error);
+//       res.status(500).send({
+//         message: 'Error saving user',
+//       });
+//     }
+//   }
+// };
+
+
+// // Retrieve all users
+// exports.findAll = async (req, res) => {
+//   try {
+//     // Find all users
+//     const users = await User.findAll();
+
+//     // Send the users data as the response
+//     res.send(users);
+//   } catch (error) {
+//     console.error('Error retrieving users:', error);
+//     res.status(500).send({
+//       message: 'Error retrieving users',
+//     });
+//   }
+// };
+
+// // Retrieve a user by ID
+// exports.findOne = async (req, res) => {
+//   const userId = req.params.userId;
+
+//   try {
+//     // Find the user by ID
+//     const user = await User.findByPk(userId);
+
+//     // If the user is not found, return a 404 error
+//     if (!user) {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+
+//     // Send the user data as the response
+//     res.send(user);
+//   } catch (error) {
+//     console.error('Error finding user:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+// // Update a user by id
+// exports.update = asyncHandler(async (req, res) => {
+//   const id = req.params.id;
+
+//   try {
+//     // Find the user by ID
+//     const user = await User.findByPk(id);
+
+//     if (!user) {
+//       res.status(404).send({
+//         message: `User with id=${id} not found`,
+//       });
+//     } else {
+//       // Update the user fields based on the request body
+//       user.FullName = req.body.FullName || user.FullName;
+//       user.Email = req.body.Email || user.Email;
+//       user.Role = req.body.Role || user.Role;
+
+//       // Update the profile picture if provided in the request
+//       if (req.file) {
+//         user.ProfilePicture = req.file.path;
+//       }
+
+//       // Update the password if provided in the request
+//       if (req.body.Password) {
+//         const hashedPassword = await bcrypt.hash(req.body.Password, 10);
+//         user.Password = hashedPassword;
+//       }
+
+//       // Save the updated user
+//       await user.save();
+
+//       res.send({
+//         message: 'User was updated successfully.',
+//         user: user,
+//       });
+//     }
+//   } catch (error) {
+//     console.error('Error updating user:', error);
+//     res.status(500).send({
+//       message: 'Error updating user',
+//     });
+//   }
+// });
+
+// // Delete a user by id
+// exports.delete = asyncHandler(async (req, res) => {
+//   const id = req.params.id;
+
+//    // Delete the user from the database
+//   const num = await User.destroy({
+//     where: { id: id },
+//   });
+
+//   if (num === 1) {
+//     res.send({
+//       message: 'User was deleted successfully!',
+//     });
+//   } else {
+//     res.send({
+//       message: `Cannot delete user with id=${id}. User not found!`,
+//     });
+//   }
+// });
+// // upload image
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, 'Images')// Set the destination folder for uploaded images
+//   },
+//   filename: (req, file, cb) => {
+//     cb(null, Date.now() + path.extname(file.originalname)); // Set the filename for uploaded images
+
+//   }
+// })
+// // Handle image upload
+// exports.upload = multer({
+//   storage: storage,// Set the storage configuration
+//   limits: { fileSize: '1000000' },// Limit the file size to 1MB
+//   fileFilter: (req, file, cb) => {
+//     const fileTypes = /jpeg|jpg|png|gif/;
+//     const mimeType = fileTypes.test(file.mimetype);// Check if the file mime type is valid
+//     const extname = fileTypes.test(path.extname(file.originalname));// Check if the file extension is valid
+//     if (mimeType && extname) {// If both mime type and extension are valid
+//       return cb(null, true);
+//     }
+//     cb('provide the proper format');// Reject the file if the format is invalid
+//   }
+// }).single('ProfilePicture');// Handle a single file with the field name 'ProfilePicture'
 
 
 // User login
@@ -262,7 +418,7 @@ exports.login = async (req, res) => {
   }
 };
 // Request password reset
-exports.requestPasswordReset = asyncHandler(async (req, res) => {
+exports.requestPasswordReset = expressAsyncHandler(async (req, res) => {
   // Validate request
   if (!req.body.Email) {
     res.status(400).send({
@@ -336,7 +492,7 @@ async function sendEmail(senderEmail, senderPassword, recipientEmail, subject, m
   }
 }
 // Verify reset password token
-exports.verifyResetToken = asyncHandler(async (req, res) => {
+exports.verifyResetToken = expressAsyncHandler(async (req, res) => {
   try {
     const { token } = req.params;
 
@@ -358,7 +514,7 @@ exports.verifyResetToken = asyncHandler(async (req, res) => {
   }
 });
 
-exports.updatePasswordWithToken = asyncHandler(async (req, res) => {
+exports.updatePasswordWithToken = expressAsyncHandler(async (req, res) => {
   try {
     const { email, password } = req.body;
 
