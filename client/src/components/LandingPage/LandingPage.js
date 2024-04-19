@@ -1,12 +1,11 @@
 import React from "react";
 import "../../css/LandingPage.css";
-import picture from "../../assets/Product-screenshot.png";
+import logo from "../../assets/logo1.png";
 import circles from "../../assets/Gize_lp-circles-bg.png";
 import { BsCardChecklist } from "react-icons/bs";
 import { AiOutlineTeam } from "react-icons/ai";
 import { MdAssignment } from "react-icons/md";
 import { Button } from "@material-ui/core";
-import Logo from "../../assets/Logo";
 
 const LandingPage = () => {
   return (
@@ -42,22 +41,12 @@ const LandingPage = () => {
       <div className="landing-container">
         <div className="landing-nav-container">
           <div className="landing-nav-logo" style={{ paddingTop: "7px" }}>
-            <a href="/">
-              <Logo />
-            </a>
+              <img src={logo} alt="logo" style={{ width: "100px", height: "100px" }}/>
           </div>
           <div className="landing-nav-sessions">
             <div style={{ marginRight: "20px" }}>
               <a href="/login">
                 <button className="landing-nav-login--button">Login</button>
-              </a>
-            </div>
-
-            <div>
-              <a href="/register">
-                <button className="landing-nav-register--button">
-                  Register
-                </button>
               </a>
             </div>
           </div>
@@ -85,7 +74,7 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="landing-main-picture">
-            <img src={picture} alt="landing" className="landing-picture" />
+            {/* <img src={picture} alt="landing" className="landing-picture" /> */}
           </div>
           {/* <div className="landing-main-bottom">
             <div className="landing-main-bottom-icons-container">

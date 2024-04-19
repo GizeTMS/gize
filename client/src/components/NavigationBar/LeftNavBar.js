@@ -10,13 +10,17 @@ import Home from "../../assets/Home";
 import Tasks from "../../assets/tasks";
 import Project from "../../assets/project";
 import Team from "../../assets/team.svg";
-import Logo from "../../assets/Logo";
+import AddIssues from "../../assets/addIssues";
+import Issues from "../../assets/issues";
+import Board from "../../assets/board";
+import GanttChart from "../../assets/ganttchart";
+import Document from "../../assets/document";
+import Settings from "../../assets/settings";
+import logo from "../../assets/logo2.png";
+
 const LeftNavBar = ({ showSidebar, sidebar }) => {
-  // const [teams, setTeams] = useState([]);
   const [teamState] = useContext(TeamContext);
   const [open, setOpen] = useState(false);
-
-  //NOTE : Only other option that worked was setting state either in here or in App.js and call it for global state. ReducerContext does not work
 
   const openModal = () => {
     setOpen(true);
@@ -51,21 +55,19 @@ const LeftNavBar = ({ showSidebar, sidebar }) => {
       <TeamForm clickClose={closeModal} open={open}></TeamForm>
     </div>
   );
+
   return (
     <div>
       <div className="left-nav-bar-container">
         <div className={sidebar ? "nav-menu active" : "nav-menu collapsed"}>
           <div className="left-nav-menu-container">
             <div className="left-nav-menu-top">
-              <div
-                className="logo"
-                style={{
-                  color: "white",
-                  marginLeft: "10px",
-                  cursor: "default",
-                }}
-              >
-                <Logo style={{}} />
+              <div className="landing-nav-logo">
+                <img
+                  src={logo}
+                  alt="logo"
+                  style={{ width: "80px", height: "50px", marginLeft: "20%", marginRight: "50px" }}
+                />
               </div>
               <div className="collapse-menu-icon-container">
                 <RiMenuFoldLine
@@ -73,16 +75,14 @@ const LeftNavBar = ({ showSidebar, sidebar }) => {
                     color: "white",
                     fontSize: "24px",
                     cursor: "pointer",
+                    marginTop: "25px",
                   }}
                   onClick={showSidebar}
                 />
               </div>
             </div>
 
-            <div
-              className="main-menu-items-container"
-              style={{ marginTop: "10px" }}
-            >
+            <div className="main-menu-items-container" style={{ marginTop: "10px" }}>
               <NavLink
                 exact
                 to="/"
@@ -104,44 +104,97 @@ const LeftNavBar = ({ showSidebar, sidebar }) => {
                 <div className="left-nav-bar-link">
                   <Tasks />
                   <div>
-                    <p
-                      className="left-nav-bar-link-title"
-                      style={{ marginLeft: "4px" }}
-                    >
-                      My Tasks
-                    </p>
+                    <p className="left-nav-bar-link-title">My Tasks</p>
                   </div>
                 </div>
               </NavLink>
-
-              {/* <NavLink
-                to="/projects"
+              <NavLink
+                to="/addIssues"
                 className="left-nav-bar-main-link"
                 activeClassName="navlink--active"
               >
                 <div className="left-nav-bar-link">
-                  <Project />
+                  <AddIssues />
                   <div>
-                    <p className="left-nav-bar-link-title">Projects</p>
+                    <p className="left-nav-bar-link-title">Add Issues</p>
                   </div>
                 </div>
-              </NavLink> */}
+              </NavLink>
+              <NavLink
+                to="/issues"
+                className="left-nav-bar-main-link"
+                activeClassName="navlink--active"
+              >
+                <div className="left-nav-bar-link">
+                  <Issues />
+                  <div>
+                    <p className="left-nav-bar-link-title">Issues</p>
+                  </div>
+                </div>
+              </NavLink>
+              <NavLink
+                to="/board"
+                className="left-nav-bar-main-link"
+                activeClassName="navlink--active"
+              >
+                <div className="left-nav-bar-link">
+                  <Board />
+                  <div>
+                    <p className="left-nav-bar-link-title">Board</p>
+                  </div>
+                </div>
+              </NavLink>
+              <NavLink
+                to="/ganttchart"
+                className="left-nav-bar-main-link"
+                activeClassName="navlink--active"
+              >
+                <div className="left-nav-bar-link">
+                  <GanttChart />
+                  <div>
+                    <p className="left-nav-bar-link-title">Gantt Chart</p>
+                  </div>
+                </div>
+              </NavLink>
+              <NavLink
+               to="/document"
+                className="left-nav-bar-main-link"
+                activeClassName="navlink--active"
+              >
+                <div className="left-nav-bar-link">
+                  <Document />
+                  <div>
+                    <p className="left-nav-bar-link-title">Document</p>
+                  </div>
+                </div>
+              </NavLink>
+              <NavLink
+                to="/settings"
+                className="left-nav-bar-main-link"
+                activeClassName="navlink--active"
+              >
+                <div className="left-nav-bar-link">
+                  <Settings />
+                  <div>
+                    <p className="left-nav-bar-link-title">Settings</p>
+                  </div>
+                </div>
+              </NavLink>
             </div>
+
             <div className="teams-items-container">
               <div className="teams-items-header" style={{ display: "flex" }}>
                 <img src={Team} alt="team-icon" />
                 <div>
                   <p className="left-nav-bar-link-title">Teams</p>
                 </div>
-                <p
-                  style={{ marginLeft: "114px", cursor: "pointer" }}
-                  onClick={openModal}
-                >
+                <p style={{ marginLeft: "114px", cursor: "pointer" }} onClick={openModal}>
                   +
                 </p>
               </div>
               {teamState.teams ? renderedList : <div>Loading...</div>}
             </div>
+
             <div className="social-links">
               <div>
                 <a href="https://github.com/ctran01/Methodize" target="__blank">
@@ -149,10 +202,7 @@ const LeftNavBar = ({ showSidebar, sidebar }) => {
                 </a>
               </div>
               <div>
-                <a
-                  href="https://www.linkedin.com/in/chris-tran-"
-                  target="__blank"
-                >
+                <a href="https://www.linkedin.com/in/chris-tran-" target="__blank">
                   <ImLinkedin className="social-icon" />
                 </a>
               </div>
