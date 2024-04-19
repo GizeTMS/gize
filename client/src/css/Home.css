@@ -40,6 +40,14 @@
   transition-duration: 1s;
 }
 
+/* CSS for modal title */
+.modal-title {
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
 .home-projects-container {
   width: 30%;
   /* height: 175px; */

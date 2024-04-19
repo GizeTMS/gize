@@ -8,17 +8,22 @@ const Project = db.Project;
 
 exports.create = asyncHandler(async (req, res) => {
     // Validate request
-    if (
-      !req.body.ProjectID ||
-      !req.body.ProjectName ||
-      !req.body.Description ||
-      !req.body.StartDate
-    ) {
-      res.status(400).send({
-        message: 'Fields cannot be empty',
+    const requiredFields = [
+      'ProjectID',
+      'ProjectName',
+      'Description',
+      'StartDate',
+    ];
+  
+    const missingFields = requiredFields.filter((field) => !req.body[field]);
+  
+    if (missingFields.length > 0) {
+      res.status(400).json({
+        message: `${missingFields.join(', ')} cannot be empty`,
       });
       return;
     }
+  
   
     // Check if project already exists
     const existingProject = await Project.findOne({

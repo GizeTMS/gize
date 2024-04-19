@@ -6,6 +6,8 @@ import apiServer from "../../config/apiServer";
 import { Context as TeamContext } from "../../context/store/TeamStore";
 import { Context as ProjectContext } from "../../context/store/ProjectStore";
 import "../../css/Forms.css";
+
+
 const ProjectForm = ({
   handleNewClose,
   clickClose,
@@ -17,31 +19,40 @@ const ProjectForm = ({
   const [projectName, setProjectName] = useState();
   const [teamState, teamdispatch] = useContext(TeamContext);
   const [projectState, projectdispatch] = useContext(ProjectContext);
+  const teamId = "";
+  const [projectID, setProjectID] = useState(generateRandomId());
+  
+  const generateRandomId = () => {
+    return Math.random().toString(36).substr(2, 6).toUpperCase();
+  };
+
+
 
   const userId = localStorage.getItem("userId");
 
   const handleNameChange = (e) => {
     setProjectName(e.target.value);
   };
+
   const handleUserKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      // e.preventDefault();
       handleSubmit(onSubmit)();
     }
   };
-  const onSubmit = async ({ name, teamId }) => {
-    await apiServer.post(`/team/${teamId}/project/`, {
-      name,
-      userId,
+
+  const onSubmit = async ({ ProjectName, Description, StartDate, EndDate, Status }) => {
+    await apiServer.post(`http://localhost:3000/project`, {
+      ProjectID : projectID,
+      ProjectName : ProjectName,
+      Description : Description,
+      StartDate : StartDate,
+      EndDate : EndDate,
+      Status : Status,
     });
 
-    //REFER TO THIS WHEN CHECKING FOR RERENDERING
     const res = await apiServer.get(`/project/user/${userId}`);
     await projectdispatch({ type: "get_user_projects", payload: res.data });
     const projectResponse = await apiServer.get(`/team/${teamId}`);
-    // NOTE: One way this could work is if we recreate form for just team page add project form button
-    // Will not work with top nav bar form
-    // setTeamProjects(projectResponse.data.Projects);
     await teamdispatch({
       type: `get_team_projects${teamId}`,
       payload: projectResponse.data,
@@ -50,9 +61,7 @@ const ProjectForm = ({
       const teamResponse = await apiServer.get(`/team/${teamId}`);
       setTeamProjects(teamResponse.data.Projects);
     }
-    // window.location.reload();
 
-    // clickClose();
     showSideProjectForm();
   };
 
@@ -60,6 +69,7 @@ const ProjectForm = ({
     var teamSelect = document.getElementById("team-select");
     clearErrors(teamSelect.name);
   };
+
   const renderedTeams = teamState.teams.map((team, i) => {
     return (
       <option key={i} id={team.id} value={team.id}>
@@ -70,10 +80,7 @@ const ProjectForm = ({
 
   return (
     <>
-      {/* <Modal open={open} onClose={clickClose}>
-        <div className="modal-container"> */}
       <form className="form-container" onSubmit={handleSubmit(onSubmit)}>
-        {/* <h2 className="form-header">Add a Project</h2> */}
         <div className="form-top-container">
           <div className="form-section">
             <div className="label-container">
@@ -81,40 +88,68 @@ const ProjectForm = ({
             </div>
             <div className="input-container">
               <input
-                name="name"
+                name="ProjectName"
                 type="text"
                 placeholder={"Project Name"}
                 className="form-input"
-                // onChange={clearError}
                 onChange={handleNameChange}
                 onKeyPress={handleUserKeyPress}
                 ref={register({ required: true })}
-              ></input>
+              />
               {errors.name?.type === "required" && (
                 <p className="error-message">Please fill out project name</p>
               )}
             </div>
             <div className="label-container">
-              <label className="form-label">Team</label>
+              <label className="form-label">Description</label>
             </div>
             <div className="input-container">
-              <select
-                id="team-select"
-                name="teamId"
+              <input
+                name="Description"
+                type="text"
+                placeholder={"Description"}
                 className="form-input"
-                ref={register({ required: true })}
-              >
-                {renderedTeams}
-              </select>
-              {errors.teamId?.type === "required" && (
-                <p className="error-message">Please choose a team</p>
-              )}
+                ref={register}
+              />
+            </div>
+            <div className="label-container">
+              <label className="form-label">Start Date</label>
+            </div>
+            <div className="input-container">
+              <input
+                name="StartDate"
+                type="date"
+                className="form-input"
+                ref={register}
+              />
+            </div>
+            <div className="label-container">
+              <label className="form-label">End Date (optional)</label>
+            </div>
+            <div className="input-container">
+              <input
+                name="EndDate"
+                type="date"
+                className="form-input"
+                ref={register}
+              />
+            </div>
+            <div className="label-container">
+              <label className="form-label">Status (optional)</label>
+            </div>
+            <div className="input-container">
+              <input
+                name="Status"
+                type="text"
+                placeholder={"Status"}
+                className="form-input"
+                ref={register}
+              />
             </div>
           </div>
         </div>
 
         <div className="form-button-container">
-          {/* marginLeft: "400px" */}
           <button
             className="cancel-button"
             onClick={showSideProjectForm}
@@ -134,8 +169,6 @@ const ProjectForm = ({
         </div>
       </form>
     </>
-    //   </Modal>
-    // </div>
   );
 };
 

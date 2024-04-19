@@ -1,12 +1,8 @@
 .popout-form {
   background-color: white;
-  width: 60%;
-  height: 100%;
+  width: 97%;
+  height: 96%;
   display: flex;
-  box-shadow: 0 1px 4px 0 rgba(21, 27, 38, 0.08);
-  border: 2px solid #e8ecee;
-  padding: 10px;
-  margin: 10px;
 }
 
 .popout-form-container {

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-
+import Modal from "react-modal";
 import { Context as UserContext } from "../../context/store/UserStore";
 import { Context as TaskContext } from "../../context/store/TaskStore";
 import { Context as ProjectContext } from "../../context/store/ProjectStore";
@@ -8,37 +8,35 @@ import TopNavBarHome from "../NavigationBar/TopNavBarHome";
 import ProjectTile from "../projects/ProjectTile";
 import NewProjectTile from "../projects/NewProjectTile";
 import Add from "../../assets/Add";
-import { AiOutlinePlusCircle } from "react-icons/ai";
 import { Link } from "react-router-dom";
 import AddProjectPopOut from "../PopOutMenu/AddProjectPopOut";
 import AddTaskPopOutTaskPage from "../PopOutMenu/AddTaskPopOutTaskPage";
 import PopOutTaskDetailsHome from "../PopOutMenu/PopOutTaskDetailsHome";
 
 const HomePage = () => {
-  // debugger;
   const [userState] = useContext(UserContext);
   const [taskState] = useContext(TaskContext);
   const [projectState] = useContext(ProjectContext);
-  // const [teamProjects,setTeamProjects] = useState();
-  const [sideTaskForm, setSideTaskForm] = useState(false);
-  const [sideProjectForm, setSideProjectForm] = useState(false);
-  const [sideTaskDetails, setSideTaskDetails] = useState(false);
-  const showSideTaskForm = () => {
-    setSideTaskDetails(false);
-    setSideProjectForm(false);
-    setSideTaskForm(!sideTaskForm);
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
+
+  const openTaskForm = () => {
+    setIsTaskDetailsOpen(false);
+    setIsProjectFormOpen(false);
+    setIsTaskFormOpen(true);
   };
 
-  const showSideProjectForm = () => {
-    setSideTaskDetails(false);
-    setSideTaskForm(false);
-    setSideProjectForm(!sideProjectForm);
+  const openProjectForm = () => {
+    setIsTaskDetailsOpen(false);
+    setIsTaskFormOpen(false);
+    setIsProjectFormOpen(true);
   };
 
-  const showSideTaskDetails = () => {
-    setSideTaskForm(false);
-    setSideProjectForm(false);
-    setSideTaskDetails(!sideTaskDetails);
+  const openTaskDetails = () => {
+    setIsTaskFormOpen(false);
+    setIsProjectFormOpen(false);
+    setIsTaskDetailsOpen(true);
   };
 
   const uncompletedTasklist = taskState.tasks.filter(
@@ -50,9 +48,6 @@ const HomePage = () => {
   });
 
   const upcomingTasklist = sortedTaskList.slice(0, 9);
-  // const upcomingTasklist = sortedTaskList
-  //   .slice(sortedTaskList.length - 4)
-  //   .reverse();
 
   const taskList = upcomingTasklist.map((task, i) => {
     return (
@@ -60,8 +55,8 @@ const HomePage = () => {
         <TaskItemHome
           task={task}
           key={i}
-          showSideTaskDetails={showSideTaskDetails}
-          sideTaskDetails={sideTaskDetails}
+          showSideTaskDetails={openTaskDetails}
+          sideTaskDetails={isTaskDetailsOpen}
         />
       )
     );
@@ -70,7 +65,6 @@ const HomePage = () => {
   const projectLists = projectState.projects.slice(0, 5);
 
   const projectTiles = projectLists.map((project, i) => {
-    // return <ProjectItemHome project={project} key={i} id={project.id} />;
     return <ProjectTile project={project} key={i} id={project.id} />;
   });
 
@@ -111,7 +105,9 @@ const HomePage = () => {
                   className={
                     upcomingTasklist.length < 5
                       ? "home-tasks-container--smaller"
-                      : sideTaskForm || sideProjectForm || sideTaskDetails
+                      : isTaskFormOpen ||
+                        isProjectFormOpen ||
+                        isTaskDetailsOpen
                       ? "home-tasks-container--small"
                       : "home-tasks-container"
                   }
@@ -138,24 +134,21 @@ const HomePage = () => {
                     </div>
                   </div>
                   <div className="home-tasks--list">
-                    {/* call get all tasks for specific user route */}
                     {taskList}
                     <div
                       className="new-home-item-container"
-                      onClick={showSideTaskForm}
+                      onClick={openTaskForm}
                     >
-                      <div className="new-home-icon-container">
-                        <Add className="new-home-item-icon" />
+                      <div className="new-home-item">
+                        <Add />
                       </div>
-                      <div className="new-home-item-name">Create Task</div>
+                      <p className="new-home-item-text">Add Task</p>
                     </div>
                   </div>
                 </div>
                 <div
                   className={
-                    upcomingTasklist.length < 5
-                      ? "home-projects-container--smaller"
-                      : sideTaskForm || sideProjectForm || sideTaskDetails
+                    isTaskFormOpen || isProjectFormOpen || isTaskDetailsOpen
                       ? "home-projects-container--small"
                       : "home-projects-container"
                   }
@@ -167,60 +160,75 @@ const HomePage = () => {
                           color: "#151b26",
                           fontWeight: 500,
                           fontSize: "20px",
+                          paddingLeft:"30px",
                         }}
                       >
                         Projects
                       </h2>
                     </div>
-                    {/* <div>
-                  <Link
-                    to="/projects"
-                    style={{ textDecoration: "none", color: "blue" }}
-                  >
-                    <p style={{ fontSize: "14px" }}>See all my projects</p>
-                  </Link>
-                </div> */}
                   </div>
-                  <div className="home-projects--list">
-                    {/* call get all projects for specific user route */}
+                  <div className="home-projects--list" 
+                      onClick={openProjectForm} >
                     {projectTiles}
-                    <div
-                      // className="new-home-item-container"
-                      onClick={showSideProjectForm}
-                      style={{ height: "60%" }}
-                    >
-                      {/* <div className="new-home-icon-container">
-                    <Add className="new-home-item-icon" />
-                  </div>
-                  <div className="new-home-item-name">Create Project</div> */}
-                      <NewProjectTile />
-                    </div>
+                    <NewProjectTile />
                   </div>
                 </div>
               </div>
             </div>
-            {sideTaskForm ? (
-              <AddTaskPopOutTaskPage
-                showSideTaskForm={showSideTaskForm}
-                title={"Add a Task"}
-              />
-            ) : null}
-            {sideProjectForm ? (
-              <AddProjectPopOut
-                showSideProjectForm={showSideProjectForm}
-                // setTeamProjects={setTeamProjects}
-                title={"Add Project"}
-              />
-            ) : null}
-            {sideTaskDetails && taskState.selectedTask ? (
-              <PopOutTaskDetailsHome
-                showSideTaskDetails={showSideTaskDetails}
-                sideTaskDetails={sideTaskDetails}
-              />
-            ) : null}
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={isTaskFormOpen}
+        onRequestClose={() => setIsTaskFormOpen(false)}
+        contentLabel="Add a Task"
+        style={{
+          content: {
+            maxWidth: "100%",
+            maxHeight: "100%",
+          },
+        }}
+      >
+        <AddTaskPopOutTaskPage
+          showSideTaskForm={() => setIsTaskFormOpen(false)}
+          title={"Add a Task"}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={isProjectFormOpen}
+        onRequestClose={() => setIsProjectFormOpen(false)}
+        contentLabel="Add Project"
+        style={{
+          content: {
+            maxWidth: "auto",
+            maxHeight: "auto",
+          },
+        }}
+      >
+        <AddProjectPopOut
+          showSideProjectForm={() => setIsProjectFormOpen(false)}
+          title={"Add Project"}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={isTaskDetailsOpen && taskState.selectedTask}
+        onRequestClose={() => setIsTaskDetailsOpen(false)}
+        contentLabel="Task Details"
+        style={{
+          content: {
+            maxWidth: "auto",
+            maxHeight: "auto",
+          },
+        }}
+      >
+        <PopOutTaskDetailsHome
+          showSideTaskDetails={() => setIsTaskDetailsOpen(false)}
+          sideTaskDetails={isTaskDetailsOpen}
+        />
+      </Modal>
     </>
   );
 };
